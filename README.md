@@ -8,6 +8,8 @@ A machine learning pipeline designed to predict next-day rainfall (`rainfall_nex
 
 Because test data rows are evaluated independently without guaranteed access to historical lags or subsequent days, this pipeline strictly avoids temporal lag features. Instead, it extracts rich spatial and physical context from concurrent weather station readings on the same calendar date, combining multiple model families via Non-Negative Least Squares (NNLS) blending.
 
+Before running the "rainfall_pipeline.py" file be sure to extract the "test and train datasets.zip" file and place the "train_cleaned.csv" and "test_cleaned" files in the same directory as the python file
+
 ---
 
 ## 📁 Repository Structure
