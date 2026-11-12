@@ -59,6 +59,143 @@ Four distinct model components are trained with customizable sample weighting (r
 ### Blending
 * Predictions are combined using **Non-Negative Least Squares (`nnls`)** with a free-sign intercept, calibrated on dense validation years (`2022` and `2023`) to mirror test set station density.
 
+
+# 🌧️ Rainfall Prediction – Model Training & Validation Results
+
+## 1. Overview
+
+This project uses machine learning models to predict rainfall (in mm) based on historical weather data from **2015–2023**.
+
+Multiple models were trained and evaluated using an expanding-window validation strategy. Their predictions were combined using an out-of-fold weighted ensemble.
+
+## 2. Dataset & Feature Engineering
+
+| Parameter | Value |
+|---|---:|
+| Historical data | 2015–2023 |
+| Labelled training rows | 546,703 |
+| Test rows | 81,803 |
+| Total features | 54 |
+| Recency half-life | 0 years |
+| Monsoon multiplier | 1.0 |
+
+### Feature Engineering
+
+- Neighbour-based features at 50 km, 100 km, and 250 km.
+- Sector-based geographical features.
+- Upwind proxy features.
+- Spatial relationships between neighbouring locations.
+
+## 3. Models Used
+
+Three regression approaches were evaluated:
+
+1. **Gradient Boosting Machine (GBM)** – 5-seed averaged predictions.
+2. **Neural Network (NN)** – 5-seed averaged predictions.
+3. **Log-Transformed GBM** – trained using `log1p(rainfall)`.
+
+An additional classifier estimated the probability of heavy rainfall (>50 mm), evaluated using ROC-AUC.
+
+## 4. Validation Strategy
+
+An expanding-window validation strategy was implemented.
+
+| Fold | Training Rows | Validation Rows |
+|---|---:|---:|
+| 2020 | 90,579 | 22,361 |
+| 2021 | 112,940 | 137,123 |
+| 2022 | 250,063 | 147,271 |
+| 2023 | 397,334 | 149,369 |
+
+## 5. Model Performance
+
+### RMSE Comparison
+
+*Lower RMSE indicates better performance.*
+
+| Model | 2020 | 2021 | 2022 | 2023 | Average RMSE |
+|---|---:|---:|---:|---:|---:|
+| Mean-only Baseline | 23.142 | 14.158 | 12.222 | 11.452 | 15.243 |
+| GBM (5 Seeds) | 19.092 | 11.623 | 9.123 | 8.679 | **12.129** |
+| Neural Network (5 Seeds) | 19.165 | 12.983 | 9.156 | 8.766 | 12.517 |
+| GBM (Log1p) | 19.812 | 12.107 | 9.203 | 8.905 | 12.507 |
+| **Blended Model** | **18.991** | 11.919 | **9.108** | 8.716 | 12.183 |
+
+### Overall Validation Metrics
+
+| Metric | Result |
+|---|---:|
+| Overall RMSE | **10.585 mm** |
+| Overall MAE | 5.151 mm |
+| Overall R² | 0.314 |
+| 2023 RMSE | 8.716 mm |
+| 2023 R² | 0.389 |
+| Rain / No-Rain Accuracy (≥1 mm) | 64.3% |
+| Rain / No-Rain Accuracy (2023) | 79.3% |
+| Heavy Rain Classification Accuracy (>50 mm) | 98.5% |
+| RMSE on Heavy Rain Days | 63.24 mm |
+
+### Key Observations
+
+- GBM achieved the best average RMSE among individual models.
+- The blended model performed competitively across all validation folds.
+- Prediction performance improved in later validation years.
+- The 2023 validation fold achieved an RMSE of 8.716 mm.
+
+> **Note:** Rainfall prediction is a regression task. RMSE, MAE, and R² are the primary evaluation metrics. Classification accuracy applies only to the specified rainfall thresholds.
+
+## 6. Ensemble Blending
+
+An out-of-fold weighted blending strategy was used to combine model predictions.
+
+### Learned Blend Weights
+
+| Component | Weight |
+|---|---:|
+| GBM | 0.494 |
+| Neural Network | 0.364 |
+| Log-GBM | 0.164 |
+| Heavy Rain Probability Contribution | 2.208 |
+| Intercept | -0.299 |
+
+The ensemble combines predictions from multiple models along with the heavy-rain probability estimate.
+
+## 7. Final Training & Test Predictions
+
+After validation, the final models were trained using the complete labelled dataset (2015–2023).
+
+### Final Pipeline
+
+1. Train the final GBM model.
+2. Train the final Neural Network model.
+3. Generate test predictions.
+4. Apply ensemble blending.
+5. Export predictions in the required submission format.
+
+### Test Prediction Summary
+
+| Metric | Result |
+|---|---:|
+| Total Test Rows | 81,803 |
+| Mean Predicted Rainfall | 3.73 mm |
+| Maximum Predicted Rainfall | 201.2 mm |
+| Predictions ≥1 mm | 45.3% |
+
+## 8. Output Files
+
+| File | Description |
+|---|---|
+| `out/submission.csv` | Final predictions in sample submission format. |
+| `predictions_with_data.csv` | Predictions combined with corresponding dataset information. |
+
+## 9. Conclusion
+
+The final ensemble achieved an overall validation RMSE of **10.585 mm** and an MAE of **5.151 mm**.
+
+GBM delivered the strongest average performance among individual models, while ensemble blending combined multiple prediction approaches.
+
+The final pipeline used **546,703 labelled observations** to generate rainfall predictions for **81,803 test observations**.
+
 ---
 
 ## 🚀 Getting Started
